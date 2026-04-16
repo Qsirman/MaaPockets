@@ -1,0 +1,175 @@
+{
+    "$comment": "merge.json — 基建/兵团单位合并引擎流程\n由 main.json 的 StartMerge 节点进入。\nMergeScanner 扫描同等级单位坐标对，MergeSwipe 执行拖拽合成。",
+    "Merge_OpenBase": {
+        "$comment": "进入基建/合并主界面。\n模板需填入基建入口按钮截图（通常位于主城底部功能栏）。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    1050,
+                    720,
+                    230
+                ],
+                "threshold": 0.75
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 500,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 1200,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Merge_WaitBaseOpen"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "ReturnToHome"
+        ]
+    },
+    "Merge_WaitBaseOpen": {
+        "$comment": "等待基建界面加载完成。\n模板需填入基建界面的特征性 UI 元素截图（如建筑排列区域顶部标题）。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    0,
+                    720,
+                    200
+                ],
+                "threshold": 0.7
+            }
+        },
+        "action": {
+            "type": "DoNothing"
+        },
+        "pre_wait_freezes": {
+            "time": 800,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Merge_ScanLoop"
+        ],
+        "timeout": 10000
+    },
+    "Merge_ScanLoop": {
+        "$comment": "合并循环主节点。调用 MergeScanner 扫描同等级单位坐标对。\n若找到可合并对，执行 MergeSwipe 拖拽；否则跳至关闭。\n循环条件：MergeScanner 命中 → 继续；超时/无命中 → 退出循环。",
+        "recognition": {
+            "type": "Custom",
+            "param": {
+                "custom_recognition": "MergeScanner",
+                "custom_recognition_param": {}
+            }
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "MergeSwipe"
+            }
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 1000,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Merge_ScanLoop"
+        ],
+        "timeout": 8000,
+        "on_error": [
+            "Merge_CheckBlueprint"
+        ]
+    },
+    "Merge_CheckBlueprint": {
+        "$comment": "合并完成后检测图纸储备预警。\nOCR 扫描科研/建设界面，若出现图纸不足提示则触发 BlueprintCheck Action。",
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [
+                    "blueprint",
+                    "图纸不足",
+                    "Blueprint",
+                    "insufficient"
+                ],
+                "roi": [
+                    0,
+                    0,
+                    720,
+                    1280
+                ]
+            }
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "BlueprintCheck"
+            }
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Merge_CloseBase"
+        ],
+        "timeout": 2000,
+        "on_error": [
+            "Merge_CloseBase"
+        ]
+    },
+    "Merge_CloseBase": {
+        "$comment": "关闭基建界面，返回主城。\n模板需填入基建界面返回/关闭按钮截图（通常左上角）。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    0,
+                    150,
+                    150
+                ],
+                "threshold": 0.7
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 800,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "ReturnToHome"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "ReturnToHome"
+        ]
+    }
+}

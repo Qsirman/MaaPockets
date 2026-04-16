@@ -1,0 +1,444 @@
+{
+    "$comment": "daily.json — 每日常规任务流程\n由 main.json 的 StartDailyTasks 节点进入。\n包含：捐赠、科研触发、岛屿大作战扫荡。\n所有节点通过 [JumpBack]GlobalGuard 实现全局容灾（v5.1+ 新风格）。",
+    "Daily_Donate": {
+        "$comment": "每日捐赠入口。检测捐赠按钮（有红点提示时表示可捐赠）。\n模板需填入主城捐赠功能红点标识截图。\n执行后通过 DailyMarkAction 将 StateManager.tasks.donated=True。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    0,
+                    720,
+                    1280
+                ],
+                "threshold": 0.75
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 500,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 1000,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Daily_ConfirmDonate"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Daily_Research"
+        ]
+    },
+    "Daily_ConfirmDonate": {
+        "$comment": "点击捐赠确认按钮（弹窗中的「捐赠/Donate」）。\n模板需填入捐赠确认弹窗截图。",
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [
+                    "Donate",
+                    "捐赠",
+                    "Confirm",
+                    "确认"
+                ],
+                "roi": [
+                    150,
+                    700,
+                    420,
+                    200
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 800,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Daily_MarkDonated"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Daily_Research"
+        ]
+    },
+    "Daily_MarkDonated": {
+        "$comment": "标记今日捐赠已完成，写入 StateManager.tasks.donated=True。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "DailyMarkAction",
+                "custom_action_param": {
+                    "task": "donated"
+                }
+            }
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Daily_Research"
+        ],
+        "timeout": 2000,
+        "on_error": [
+            "Daily_Research"
+        ]
+    },
+    "Daily_Research": {
+        "$comment": "触发今日科研任务。检测科研建筑上的红点或「可研究」状态。\n模板需填入科研建筑（Research Lab）图标截图。\n若未检测到（无可研究项）则直接跳至岛屿大作战。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    200,
+                    720,
+                    900
+                ],
+                "threshold": 0.75
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 500,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 1000,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Daily_SelectResearch"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Daily_IslandBattle"
+        ]
+    },
+    "Daily_SelectResearch": {
+        "$comment": "选择最优科研项目（OCR 识别「研究/Research」按钮并点击）。\n优先选择屏幕中第一个可点击的研究项目。\n模板需填入科研界面「研究」按钮截图。",
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [
+                    "Research",
+                    "研究",
+                    "Start",
+                    "开始"
+                ],
+                "roi": [
+                    0,
+                    300,
+                    720,
+                    800
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 800,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Daily_MarkResearched"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Daily_CloseResearch"
+        ]
+    },
+    "Daily_MarkResearched": {
+        "$comment": "标记今日科研已触发，写入 StateManager.tasks.researched=True。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "DailyMarkAction",
+                "custom_action_param": {
+                    "task": "researched"
+                }
+            }
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Daily_CloseResearch"
+        ],
+        "timeout": 2000,
+        "on_error": [
+            "Daily_CloseResearch"
+        ]
+    },
+    "Daily_CloseResearch": {
+        "$comment": "关闭科研界面，返回主城。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    0,
+                    150,
+                    150
+                ],
+                "threshold": 0.7
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 600,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Daily_IslandBattle"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Daily_IslandBattle"
+        ]
+    },
+    "Daily_IslandBattle": {
+        "$comment": "岛屿大作战扫荡入口。\n首先检测「岛屿大作战」活动是否开放（按钮在主城界面存在）。\n模板需填入岛屿大作战功能入口截图。\n若检测失败（活动未开放），直接结束每日任务流程。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    200,
+                    720,
+                    900
+                ],
+                "threshold": 0.75
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 500,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 1200,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Daily_IslandSweep"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Daily_MarkAllDone"
+        ]
+    },
+    "Daily_IslandSweep": {
+        "$comment": "点击「扫荡/Sweep」按钮一键清扫岛屿大作战。\n模板需填入岛屿大作战界面的「扫荡」按钮截图。",
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [
+                    "Sweep",
+                    "扫荡",
+                    "Quick",
+                    "快速"
+                ],
+                "roi": [
+                    0,
+                    700,
+                    720,
+                    500
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 800,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Daily_IslandConfirm"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Daily_CloseIsland"
+        ]
+    },
+    "Daily_IslandConfirm": {
+        "$comment": "确认扫荡弹窗。",
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [
+                    "Confirm",
+                    "确认",
+                    "OK"
+                ],
+                "roi": [
+                    150,
+                    700,
+                    420,
+                    300
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 1000,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Daily_MarkIslandDone"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Daily_CloseIsland"
+        ]
+    },
+    "Daily_MarkIslandDone": {
+        "$comment": "标记岛屿大作战今日已完成。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "DailyMarkAction",
+                "custom_action_param": {
+                    "task": "island_battle_done"
+                }
+            }
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Daily_CloseIsland"
+        ],
+        "timeout": 2000,
+        "on_error": [
+            "Daily_CloseIsland"
+        ]
+    },
+    "Daily_CloseIsland": {
+        "$comment": "关闭岛屿大作战界面，返回主城。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    0,
+                    150,
+                    150
+                ],
+                "threshold": 0.7
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 600,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Daily_MarkAllDone"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Daily_MarkAllDone"
+        ]
+    },
+    "Daily_MarkAllDone": {
+        "$comment": "每日任务全部完成。将所有相关标记批量写入 StateManager（原子落盘一次）。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "DailyMarkAction",
+                "custom_action_param": {
+                    "task": "all_done"
+                }
+            }
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "ReturnToHome"
+        ],
+        "timeout": 2000,
+        "on_error": [
+            "ReturnToHome"
+        ]
+    }
+}

@@ -1,109 +1,239 @@
 {
-    // 本文件主要定义了通用 UI 的行为和显示内容
-    // 可参考文档和示例添加更多您需要的功能
-    // 文档：https://maafw.xyz/docs/3.3-ProjectInterfaceV2
-    // 示例：https://github.com/MaaXYZ/MaaFramework/blob/main/sample/interface.json
     "interface_version": 2,
-    "name": "MaaXXX",
-    "description": "这是一个使用 MaaFramework 创建的新项目。",
-    "contact": "QQ群: 123456789",
-    "license": "MIT",
-    "welcome": "首次使用！欢迎使用 MAA!",
-    // 填写项目地址和版本号可实现自动更新功能
-    "github": "https://github.com/MaaXYZ/MaaPracticeBoilerplate",
+    "name": "MaaPockets",
+    "description": "《口袋奇兵》Top War AFK 自动运营系统",
     "version": "1.0.0",
-    // Mirror酱为第三方分发服务，新项目默认关闭
-    // 若有需要请联系 Mirror酱 开通，直接自行开启是无法使用的
-    // "mirrorchyan_rid": "MaaXXX",
-    // "mirrorchyan_multiplatform": true,
     "controller": [
         {
             "name": "安卓端",
             "type": "Adb",
-            "display_short_side": 720 // 默认缩放分辨率的短边长度
-        },
-        {
-            "name": "桌面端",
-            "type": "Win32",
-            "win32": {
-                "class_regex": ".*",
-                "window_regex": "Visual Studio",
-                // 截图及控制方式，请根据项目实际情况修改
-                // 文档: https://maafw.xyz/docs/2.4-ControlMethods
-                "screencap": "PrintWindow", // 截图方式
-                "mouse": "PostMessageWithCursorPos", // 鼠标控制方式
-                "keyboard": "PostMessageWithCursorPos" // 键盘控制方式
-            }
+            "display_short_side": 720
         }
     ],
     "resource": [
         {
-            "name": "官服",
+            "name": "默认资源",
             "path": [
                 "./resource"
-            ]
-        },
-        {
-            "name": "B 服",
-            "path": [
-                "./resource"
-                // "./resource_bilibili"
             ]
         }
     ],
-    // 可选的 agent 示例
-    // "agent": {
-    //     "child_exec": "python",
-    //     "child_args": [
-    //         "./agent/main.py"
-    //     ]
-    // },
+    "agent": {
+        "child_exec": "python",
+        "child_args": [
+            "./agent/main.py"
+        ]
+    },
     "task": [
         {
-            "name": "普通任务",
-            "entry": "MyTask1"
-        },
-        {
-            "name": "选项任务",
-            "entry": "MyTask2",
+            "name": "AFK全自动运营",
+            "entry": "StartAFK",
             "option": [
-                "任务选项1"
+                "运营强度",
+                "体力药水策略",
+                "背包开箱保护"
             ]
         },
         {
-            "name": "参数任务",
-            "entry": "MyTask3",
+            "name": "每日任务",
+            "entry": "StartDailyTasks",
             "option": [
-                "任务选项1"
-            ],
-            "pipeline_override": {}
+                "岛屿大作战开关"
+            ]
         },
         {
-            "name": "带Custom的任务",
-            "entry": "MyTask4"
+            "name": "雷达清场",
+            "entry": "StartRadar",
+            "option": [
+                "雷达空刷策略",
+                "体力药水策略"
+            ]
+        },
+        {
+            "name": "合并引擎",
+            "entry": "StartMerge"
+        },
+        {
+            "name": "外勤派遣",
+            "entry": "StartExpedition",
+            "option": [
+                "卡车品质门槛",
+                "背包开箱保护"
+            ]
         }
     ],
     "option": {
-        "任务选项1": {
+        "运营强度": {
             "type": "select",
             "cases": [
                 {
-                    "name": "文本1",
+                    "name": "轻度",
                     "pipeline_override": {
-                        "OcrTask": {
-                            "text": "文本1"
+                        "StartAFK": {
+                            "custom_recognition_param": {
+                                "intensity": "轻度"
+                            }
                         }
                     }
                 },
                 {
-                    "name": "文本2",
+                    "name": "标准",
                     "pipeline_override": {
-                        "OcrTask": {
-                            "text": "文本2"
+                        "StartAFK": {
+                            "custom_recognition_param": {
+                                "intensity": "标准"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "激进",
+                    "pipeline_override": {
+                        "StartAFK": {
+                            "custom_recognition_param": {
+                                "intensity": "激进"
+                            }
                         }
                     }
                 }
-            ]
+            ],
+            "default_case": "标准"
+        },
+        "体力药水策略": {
+            "type": "switch",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "pipeline_override": {
+                        "StartAFK": {
+                            "custom_recognition_param": {
+                                "allow_potion": true
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "No",
+                    "pipeline_override": {
+                        "StartAFK": {
+                            "custom_recognition_param": {
+                                "allow_potion": false
+                            }
+                        }
+                    }
+                }
+            ],
+            "default_case": "No"
+        },
+        "背包开箱保护": {
+            "type": "switch",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "pipeline_override": {
+                        "StartExpedition": {
+                            "custom_recognition_param": {
+                                "inventory_protect": true
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "No",
+                    "pipeline_override": {
+                        "StartExpedition": {
+                            "custom_recognition_param": {
+                                "inventory_protect": false
+                            }
+                        }
+                    }
+                }
+            ],
+            "default_case": "Yes"
+        },
+        "卡车品质门槛": {
+            "type": "select",
+            "cases": [
+                {
+                    "name": "R",
+                    "pipeline_override": {
+                        "StartExpedition": {
+                            "custom_recognition_param": {
+                                "truck_min_quality": "R"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "SR",
+                    "pipeline_override": {
+                        "StartExpedition": {
+                            "custom_recognition_param": {
+                                "truck_min_quality": "SR"
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "SSR",
+                    "pipeline_override": {
+                        "StartExpedition": {
+                            "custom_recognition_param": {
+                                "truck_min_quality": "SSR"
+                            }
+                        }
+                    }
+                }
+            ],
+            "default_case": "SR"
+        },
+        "雷达空刷策略": {
+            "type": "switch",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "pipeline_override": {
+                        "StartRadar": {
+                            "custom_recognition_param": {
+                                "use_free_refresh": true
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "No",
+                    "pipeline_override": {
+                        "StartRadar": {
+                            "custom_recognition_param": {
+                                "use_free_refresh": false
+                            }
+                        }
+                    }
+                }
+            ],
+            "default_case": "Yes"
+        },
+        "岛屿大作战开关": {
+            "type": "switch",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "pipeline_override": {
+                        "Daily_IslandBattle": {
+                            "enabled": true
+                        }
+                    }
+                },
+                {
+                    "name": "No",
+                    "pipeline_override": {
+                        "Daily_IslandBattle": {
+                            "enabled": false
+                        }
+                    }
+                }
+            ],
+            "default_case": "Yes"
         }
     }
 }

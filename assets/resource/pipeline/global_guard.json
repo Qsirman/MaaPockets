@@ -1,0 +1,408 @@
+{
+    "$comment": "全局兜底流程 global_guard.json\n所有主流程节点通过 interrupt 字段引用 GlobalGuard，\n使其成为贯穿全局的异常安全网。\n包含：断线重连、通用弹窗关闭（含原「关闭开始弹窗」逻辑）、网络错误指数退避。",
+    "GlobalGuard": {
+        "$comment": "全局守卫根节点。所有子流程的 interrupt 列表中引用此节点名。\n本节点本身做一次 OCR 粗扫，命中任何异常关键字则进入对应子流程。\n正常游戏画面不会触发此节点（timeout 极短）。",
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [
+                    "Reconnect",
+                    "重新连接",
+                    "Network Error",
+                    "网络错误",
+                    "Connection Lost",
+                    "连接已断开",
+                    "OK",
+                    "确认"
+                ],
+                "roi": [
+                    0,
+                    0,
+                    720,
+                    1280
+                ]
+            }
+        },
+        "action": {
+            "type": "DoNothing"
+        },
+        "timeout": 2000,
+        "next": [
+            "Guard_DetectReconnect",
+            "Guard_DetectNetworkError",
+            "Guard_DetectStartPopup",
+            "Guard_DetectGenericPopup"
+        ]
+    },
+    "Guard_DetectReconnect": {
+        "$comment": "检测「重新连接」弱网字样。\n同时覆盖中英文，兼容不同服务器版本界面。",
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [
+                    "Reconnect",
+                    "重新连接",
+                    "Retry",
+                    "重试"
+                ],
+                "roi": [
+                    100,
+                    400,
+                    520,
+                    200
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 500,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 1000,
+            "threshold": 0.01
+        },
+        "next": [
+            "Guard_WaitLoginSuccess"
+        ],
+        "on_error": [
+            "Guard_Backoff_1s"
+        ]
+    },
+    "Guard_WaitLoginSuccess": {
+        "$comment": "等待登录成功后主界面特征出现（模板需后续填入主城 HQ 图标截图）。\n若超时则进入退避重试链。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    0,
+                    720,
+                    200
+                ],
+                "threshold": 0.7
+            }
+        },
+        "action": {
+            "type": "DoNothing"
+        },
+        "timeout": 30000,
+        "next": [
+            "Guard_ReconnectSuccess"
+        ],
+        "on_error": [
+            "Guard_Backoff_2s"
+        ]
+    },
+    "Guard_ReconnectSuccess": {
+        "$comment": "重连成功节点。通过 CustomAction 回调 Python 层记录重连成功，清零 fail_count。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "ReconnectSuccessAction"
+            }
+        },
+        "next": []
+    },
+    "Guard_DetectNetworkError": {
+        "$comment": "检测通用网络错误弹窗，点击确认按钮后进入退避链。",
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [
+                    "Network Error",
+                    "网络错误",
+                    "Connection Lost",
+                    "连接已断开",
+                    "服务器维护"
+                ],
+                "roi": [
+                    50,
+                    300,
+                    620,
+                    400
+                ]
+            }
+        },
+        "action": {
+            "type": "DoNothing"
+        },
+        "timeout": 1500,
+        "next": [
+            "Guard_ClickErrorOK"
+        ],
+        "on_error": [
+            "Guard_DetectStartPopup"
+        ]
+    },
+    "Guard_ClickErrorOK": {
+        "$comment": "点击网络错误弹窗的「确认/OK」按钮。",
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [
+                    "OK",
+                    "确认",
+                    "Confirm"
+                ],
+                "roi": [
+                    200,
+                    700,
+                    320,
+                    120
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 800,
+            "threshold": 0.01
+        },
+        "next": [
+            "Guard_Backoff_1s"
+        ],
+        "on_error": [
+            "Guard_Backoff_1s"
+        ]
+    },
+    "Guard_DetectStartPopup": {
+        "$comment": "检测游戏启动时的初始弹窗（整合自原「关闭开始弹窗.json」）。\n模板填入游戏启动弹窗右上角「X」关闭按钮的截图。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "first_popup.png"
+                ],
+                "roi": [
+                    540,
+                    180,
+                    160,
+                    160
+                ],
+                "threshold": 0.75
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 400,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 600,
+            "threshold": 0.01
+        },
+        "next": [
+            "Guard_DetectStartPopup"
+        ],
+        "timeout": 3000,
+        "on_error": [
+            "Guard_DetectGenericPopup"
+        ]
+    },
+    "Guard_DetectGenericPopup": {
+        "$comment": "通用活动/广告弹窗关闭器：TemplateMatch 检测各类「X」关闭图标。\n模板填入游戏中通用弹窗右上角「X」图标截图（多种形态可用数组列出多个模板）。\n采用低阈值宽泛匹配，宁可误触一次关闭也不留弹窗阻塞流程。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    400,
+                    50,
+                    300,
+                    300
+                ],
+                "threshold": 0.65
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 700,
+            "threshold": 0.01
+        },
+        "next": [
+            "Guard_DetectGenericPopup"
+        ],
+        "timeout": 3000,
+        "on_error": []
+    },
+    "Guard_Backoff_1s": {
+        "$comment": "指数退避第1级：等待 1 秒后再尝试重连。\n连续失败次数通过 Python 层 ReconnectAction 累计，\nPipeline 侧通过链式节点模拟不同等待时长。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "ReconnectAction",
+                "custom_action_param": {
+                    "backoff_level": 1
+                }
+            }
+        },
+        "next": [
+            "Guard_DetectReconnect"
+        ],
+        "timeout": 3000
+    },
+    "Guard_Backoff_2s": {
+        "$comment": "指数退避第2级：等待 2 秒。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "ReconnectAction",
+                "custom_action_param": {
+                    "backoff_level": 2
+                }
+            }
+        },
+        "next": [
+            "Guard_DetectReconnect"
+        ],
+        "timeout": 5000
+    },
+    "Guard_Backoff_4s": {
+        "$comment": "指数退避第3级：等待 4 秒。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "ReconnectAction",
+                "custom_action_param": {
+                    "backoff_level": 3
+                }
+            }
+        },
+        "next": [
+            "Guard_DetectReconnect"
+        ],
+        "timeout": 8000
+    },
+    "Guard_Backoff_8s": {
+        "$comment": "指数退避第4级：等待 8 秒。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "ReconnectAction",
+                "custom_action_param": {
+                    "backoff_level": 4
+                }
+            }
+        },
+        "next": [
+            "Guard_DetectReconnect"
+        ],
+        "timeout": 12000
+    },
+    "Guard_Backoff_16s": {
+        "$comment": "指数退避第5级：等待 16 秒。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "ReconnectAction",
+                "custom_action_param": {
+                    "backoff_level": 5
+                }
+            }
+        },
+        "next": [
+            "Guard_DetectReconnect"
+        ],
+        "timeout": 20000
+    },
+    "Guard_Backoff_32s": {
+        "$comment": "指数退避第6级：等待 32 秒。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "ReconnectAction",
+                "custom_action_param": {
+                    "backoff_level": 6
+                }
+            }
+        },
+        "next": [
+            "Guard_DetectReconnect"
+        ],
+        "timeout": 36000
+    },
+    "Guard_Backoff_64s": {
+        "$comment": "指数退避第7级：等待 64 秒。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "ReconnectAction",
+                "custom_action_param": {
+                    "backoff_level": 7
+                }
+            }
+        },
+        "next": [
+            "Guard_DetectReconnect"
+        ],
+        "timeout": 70000
+    },
+    "Guard_Backoff_256s": {
+        "$comment": "指数退避最高级：等待 256 秒（约4分钟）。达到上限后继续尝试重连，不放弃。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "ReconnectAction",
+                "custom_action_param": {
+                    "backoff_level": 8
+                }
+            }
+        },
+        "next": [
+            "Guard_DetectReconnect"
+        ],
+        "timeout": 260000
+    }
+}

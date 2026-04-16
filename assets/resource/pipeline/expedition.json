@@ -1,0 +1,326 @@
+{
+    "$comment": "expedition.json — 外勤派遣 / 卡车护送 / 背包安全管理流程\n由 main.json 的 StartExpedition 节点进入。",
+    "Expedition_OpenMap": {
+        "$comment": "打开大地图/外勤界面。\n模板需填入主城底部「外勤/Map」入口按钮截图。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    1050,
+                    720,
+                    230
+                ],
+                "threshold": 0.75
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 500,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 1200,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Expedition_WaitMapOpen"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "ReturnToHome"
+        ]
+    },
+    "Expedition_WaitMapOpen": {
+        "$comment": "等待大地图界面加载完成。\n模板需填入大地图界面的特征性 UI 元素（如地图顶部资源/功能栏）。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    0,
+                    720,
+                    200
+                ],
+                "threshold": 0.7
+            }
+        },
+        "action": {
+            "type": "DoNothing"
+        },
+        "pre_wait_freezes": {
+            "time": 800,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Expedition_CheckSlots"
+        ],
+        "timeout": 10000,
+        "on_error": [
+            "Expedition_CloseMap"
+        ]
+    },
+    "Expedition_CheckSlots": {
+        "$comment": "检查外勤槽位空闲状态，通过 ExpeditionSlotChecker 识别「出发/Go」按钮。\n若无空位，跳至卡车护送流程；有空位则继续派遣。",
+        "recognition": {
+            "type": "Custom",
+            "param": {
+                "custom_recognition": "ExpeditionSlotChecker",
+                "custom_recognition_param": {}
+            }
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "ExpeditionDispatch"
+            }
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Expedition_ConfirmDispatch"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Expedition_CheckTruck"
+        ]
+    },
+    "Expedition_ConfirmDispatch": {
+        "$comment": "确认外勤派遣弹窗（点击确认/OK 按钮）。\n模板需填入派遣确认弹窗中的「确认」按钮截图。",
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [
+                    "Confirm",
+                    "确认",
+                    "OK",
+                    "Go"
+                ],
+                "roi": [
+                    150,
+                    700,
+                    420,
+                    200
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 1000,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Expedition_CheckSlots"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Expedition_CheckTruck"
+        ]
+    },
+    "Expedition_CheckTruck": {
+        "$comment": "进入卡车护送界面检查当前护送品质。\n模板需填入大地图中「卡车护送/Truck」入口的截图。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    200,
+                    720,
+                    900
+                ],
+                "threshold": 0.75
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 1000,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Expedition_TruckQualityCheck"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Expedition_CheckInventory"
+        ]
+    },
+    "Expedition_TruckQualityCheck": {
+        "$comment": "卡车品质筛选：由 TruckQualityFilter Action 判断是否满足门槛。\n不满足则刷新队列（消耗免费次数），满足则接受任务。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "TruckQualityFilter",
+                "custom_action_param": {
+                    "truck_min_quality": "SR"
+                }
+            }
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Expedition_AcceptTruck"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Expedition_CheckInventory"
+        ]
+    },
+    "Expedition_RefreshTruck": {
+        "$comment": "点击刷新按钮更换卡车护送队列（消耗免费刷新次数）。\n模板需填入刷新按钮截图（通常为循环箭头图标）。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    800,
+                    720,
+                    400
+                ],
+                "threshold": 0.75
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 1000,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Expedition_TruckQualityCheck"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Expedition_AcceptTruck"
+        ]
+    },
+    "Expedition_AcceptTruck": {
+        "$comment": "接受卡车护送任务（点击「接受/Accept」按钮）。\n模板需填入接受任务按钮截图。",
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [
+                    "Accept",
+                    "接受",
+                    "Escort",
+                    "护送"
+                ],
+                "roi": [
+                    100,
+                    900,
+                    520,
+                    200
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 1000,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Expedition_CheckInventory"
+        ],
+        "timeout": 5000
+    },
+    "Expedition_CheckInventory": {
+        "$comment": "检查背包是否需要开箱（resource_shortage 状态触发）。\n若 StateManager.inventory.resource_shortage=True，进入安全开箱流程；否则直接关闭地图。",
+        "recognition": {
+            "type": "DirectHit"
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "InventorySafeOpen"
+            }
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Expedition_CloseMap"
+        ],
+        "timeout": 3000
+    },
+    "Expedition_CloseMap": {
+        "$comment": "关闭大地图界面，返回主城。\n模板需填入大地图返回/关闭按钮截图。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    0,
+                    150,
+                    150
+                ],
+                "threshold": 0.7
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 800,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "ReturnToHome"
+        ],
+        "timeout": 5000
+    }
+}

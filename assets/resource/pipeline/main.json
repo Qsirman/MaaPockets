@@ -1,0 +1,414 @@
+{
+    "$__mpe_config_main": {
+        "$__mpe_code": {
+            "prefix": "",
+            "savedViewport": {
+                "x": -46,
+                "y": -619,
+                "zoom": 1.27
+            },
+            "filename": "main",
+            "version": "v1.4.1"
+        }
+    },
+    "$comment": {
+        "0": "m",
+        "1": "a",
+        "2": "i",
+        "3": "n",
+        "4": ".",
+        "5": "j",
+        "6": "s",
+        "7": "o",
+        "8": "n",
+        "9": " ",
+        "10": "—",
+        "11": " ",
+        "12": "口",
+        "13": "袋",
+        "14": "奇",
+        "15": "兵",
+        "16": " ",
+        "17": "A",
+        "18": "F",
+        "19": "K",
+        "20": " ",
+        "21": "系",
+        "22": "统",
+        "23": "主",
+        "24": "入",
+        "25": "口",
+        "26": "流",
+        "27": "程",
+        "28": "\n",
+        "29": "每",
+        "30": "个",
+        "31": "顶",
+        "32": "层",
+        "33": " ",
+        "34": "S",
+        "35": "t",
+        "36": "a",
+        "37": "r",
+        "38": "t",
+        "39": "*",
+        "40": " ",
+        "41": "节",
+        "42": "点",
+        "43": "对",
+        "44": "应",
+        "45": " ",
+        "46": "i",
+        "47": "n",
+        "48": "t",
+        "49": "e",
+        "50": "r",
+        "51": "f",
+        "52": "a",
+        "53": "c",
+        "54": "e",
+        "55": ".",
+        "56": "j",
+        "57": "s",
+        "58": "o",
+        "59": "n",
+        "60": " ",
+        "61": "中",
+        "62": "的",
+        "63": "一",
+        "64": "个",
+        "65": " ",
+        "66": "t",
+        "67": "a",
+        "68": "s",
+        "69": "k",
+        "70": " ",
+        "71": "e",
+        "72": "n",
+        "73": "t",
+        "74": "r",
+        "75": "y",
+        "76": "。",
+        "77": "\n",
+        "78": "所",
+        "79": "有",
+        "80": "节",
+        "81": "点",
+        "82": "均",
+        "83": "通",
+        "84": "过",
+        "85": " ",
+        "86": "[",
+        "87": "J",
+        "88": "u",
+        "89": "m",
+        "90": "p",
+        "91": "B",
+        "92": "a",
+        "93": "c",
+        "94": "k",
+        "95": "]",
+        "96": "G",
+        "97": "l",
+        "98": "o",
+        "99": "b",
+        "100": "a",
+        "101": "l",
+        "102": "G",
+        "103": "u",
+        "104": "a",
+        "105": "r",
+        "106": "d",
+        "107": " ",
+        "108": "实",
+        "109": "现",
+        "110": "全",
+        "111": "局",
+        "112": "安",
+        "113": "全",
+        "114": "网",
+        "115": "（",
+        "116": "v",
+        "117": "5",
+        "118": ".",
+        "119": "1",
+        "120": "+",
+        "121": " ",
+        "122": "新",
+        "123": "风",
+        "124": "格",
+        "125": "）",
+        "126": "。",
+        "$__mpe_code": {
+            "position": {
+                "x": 12,
+                "y": 12
+            }
+        }
+    },
+    "StartAFK": {
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "StartAFKAction"
+            }
+        },
+        "$comment": "AFK全自动运营入口。由 AgentServer 的 schedule 循环持续调度，\n此处 Pipeline 节点仅作为 tasker.run_task() 的入口锚点，\n实际调度逻辑由 scheduler.py 控制。",
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "AFK_CheckDaily",
+            "AFK_CheckRadar",
+            "AFK_CheckMerge",
+            "AFK_CheckExpedition"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 252,
+                "y": 501
+            }
+        }
+    },
+    "AFK_CheckDaily": {
+        "recognition": {
+            "type": "Custom",
+            "param": {
+                "custom_recognition": "DailyStatusChecker"
+            }
+        },
+        "$comment": "检查今日任务是否完成（捐赠/科研/岛屿大作战）。\n通过 CustomRecognition 读取 StateManager 中的 tasks.donated 等标记。",
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "StartDailyTasks"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 572,
+                "y": 149
+            }
+        }
+    },
+    "AFK_CheckRadar": {
+        "recognition": {
+            "type": "Custom",
+            "param": {
+                "custom_recognition": "RadarReadyChecker"
+            }
+        },
+        "$comment": "检查雷达是否有待处理任务（由 StateManager 体力预测驱动）。",
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "StartRadar"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 572,
+                "y": 610
+            }
+        }
+    },
+    "AFK_CheckMerge": {
+        "$comment": "检查是否需要执行合并操作。",
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "StartMerge"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 572,
+                "y": 425
+            }
+        }
+    },
+    "AFK_CheckExpedition": {
+        "$comment": "检查外勤槽位是否空闲，决定是否派遣。",
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "StartExpedition"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 572,
+                "y": 1258
+            }
+        }
+    },
+    "StartDailyTasks": {
+        "$comment": "每日任务入口节点（亦可作为 interface.json task 独立入口）。\n依次完成：捐赠 → 科研 → 岛屿大作战（可选）。",
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Daily_Donate",
+            "Daily_Research",
+            "Daily_IslandBattle"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 892,
+                "y": 132
+            }
+        }
+    },
+    "StartRadar": {
+        "$comment": "雷达清场入口节点（亦可作为 interface.json task 独立入口）。\n进入雷达界面后交由 RadarScanner CustomRecognition 处理。",
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Radar_OpenRadar"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 892,
+                "y": 621
+            }
+        }
+    },
+    "StartMerge": {
+        "$comment": "合并引擎入口节点（亦可作为 interface.json task 独立入口）。\n进入基建/兵团界面后交由 MergeScanner CustomRecognition 处理。",
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Merge_OpenBase"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 892,
+                "y": 407
+            }
+        }
+    },
+    "StartExpedition": {
+        "$comment": "外勤派遣入口节点（亦可作为 interface.json task 独立入口）。",
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Expedition_OpenMap"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 892,
+                "y": 1259
+            }
+        }
+    },
+    "ReturnToHome": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "roi": [
+                    0,
+                    0,
+                    720,
+                    150
+                ],
+                "template": [
+                    "home_signature.png"
+                ],
+                "threshold": 0.75
+            }
+        },
+        "timeout": 5000,
+        "$comment": "通用「返回主城」节点。各子流程完成后跳回此节点确保处于主界面。\n模板需填入主城界面的标识性图标截图（如 HQ 建筑或资源栏）。",
+        "on_error": [
+            "ReturnToHome_ClickBack"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 544,
+                "y": 928
+            }
+        }
+    },
+    "ReturnToHome_ClickBack": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "roi": [
+                    0,
+                    0,
+                    150,
+                    150
+                ],
+                "template": [
+                    "return_back_to_home.png"
+                ],
+                "threshold": 0.7
+            }
+        },
+        "pre_wait_freezes": {
+            "time": 500,
+            "threshold": 0.01
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "post_wait_freezes": {
+            "time": 800,
+            "threshold": 0.01
+        },
+        "timeout": 5000,
+        "$comment": "点击返回按钮（左上角）尝试回到主城界面。\n模板需填入返回按钮截图（通常为左上角箭头）。",
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "ReturnToHome"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 892,
+                "y": 865
+            }
+        }
+    },
+    "$__mpe_external_GlobalGuard_main": {
+        "$__mpe_code": {
+            "position": {
+                "x": 1212,
+                "y": 572
+            }
+        }
+    },
+    "$__mpe_external_Daily_Donate_main": {
+        "$__mpe_code": {
+            "position": {
+                "x": 1212,
+                "y": 292
+            }
+        }
+    },
+    "$__mpe_external_Daily_Research_main": {
+        "$__mpe_code": {
+            "position": {
+                "x": 1212,
+                "y": 12
+            }
+        }
+    },
+    "$__mpe_external_Daily_IslandBattle_main": {
+        "$__mpe_code": {
+            "position": {
+                "x": 1212,
+                "y": 152
+            }
+        }
+    },
+    "$__mpe_external_Radar_OpenRadar_main": {
+        "$__mpe_code": {
+            "position": {
+                "x": 1212,
+                "y": 712
+            }
+        }
+    },
+    "$__mpe_external_Merge_OpenBase_main": {
+        "$__mpe_code": {
+            "position": {
+                "x": 1212,
+                "y": 432
+            }
+        }
+    },
+    "$__mpe_external_Expedition_OpenMap_main": {
+        "$__mpe_code": {
+            "position": {
+                "x": 1212,
+                "y": 1338
+            }
+        }
+    }
+}

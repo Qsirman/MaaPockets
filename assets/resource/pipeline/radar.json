@@ -1,0 +1,315 @@
+{
+    "$comment": "radar.json — 雷达矩阵优先级清空流程\n由 main.json 的 StartRadar 节点进入，执行优先级雷达任务循环。\n所有节点通过 [JumpBack]GlobalGuard 实现全局容灾（v5.1+ 新风格）。",
+    "Radar_OpenRadar": {
+        "$comment": "点击主城界面的雷达入口图标。\n模板需填入雷达功能图标的截图（通常位于主城右侧功能栏）。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    550,
+                    400,
+                    170,
+                    400
+                ],
+                "threshold": 0.75
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 500,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 1000,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Radar_WaitRadarOpen"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "ReturnToHome"
+        ]
+    },
+    "Radar_WaitRadarOpen": {
+        "$comment": "等待雷达界面完全加载（检测雷达界面特征性元素）。\n模板需填入雷达任务列表页面的特征截图（如顶部标题栏）。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    0,
+                    720,
+                    200
+                ],
+                "threshold": 0.7
+            }
+        },
+        "action": {
+            "type": "DoNothing"
+        },
+        "pre_wait_freezes": {
+            "time": 800,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Radar_CheckTopLord",
+            "Radar_ScanTasks"
+        ],
+        "timeout": 10000,
+        "on_error": [
+            "Radar_CloseRadar"
+        ]
+    },
+    "Radar_CheckTopLord": {
+        "$comment": "检测 Top Lord（最强领主）活动是否处于激活状态。\nOCR 扫描界面中是否存在活动标识文字。\n命中时将 top_lord_active=True 写入状态机，解锁药水使用路径。",
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [
+                    "Top Lord",
+                    "最强领主",
+                    "top lord"
+                ],
+                "roi": [
+                    0,
+                    0,
+                    720,
+                    300
+                ]
+            }
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "TopLordDetectAction"
+            }
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Radar_ScanTasks"
+        ],
+        "timeout": 2000,
+        "on_error": [
+            "Radar_ScanTasks"
+        ]
+    },
+    "Radar_ScanTasks": {
+        "$comment": "调用 RadarScanner CustomRecognition 扫描任务列表，返回最高优先级任务坐标。\nCustomRecognition 内部按「Lost supplies > 红点任务 > 僵尸/救援 > 普通」排序。",
+        "recognition": {
+            "type": "Custom",
+            "param": {
+                "custom_recognition": "RadarScanner",
+                "custom_recognition_param": {}
+            }
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "RadarDispatch"
+            }
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Radar_WaitTaskComplete"
+        ],
+        "timeout": 8000,
+        "on_error": [
+            "Radar_TryFreeRefresh"
+        ]
+    },
+    "Radar_WaitTaskComplete": {
+        "$comment": "等待任务派遣动画完成（画面定格后才能继续下一步）。\n模板需填入任务派遣成功后的界面截图（任务进行中状态指示器）。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    200,
+                    720,
+                    800
+                ],
+                "threshold": 0.7
+            }
+        },
+        "action": {
+            "type": "DoNothing"
+        },
+        "pre_wait_freezes": {
+            "time": 1000,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 500,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Radar_SyncStamina"
+        ],
+        "timeout": 15000,
+        "on_error": [
+            "Radar_ScanTasks"
+        ]
+    },
+    "Radar_SyncStamina": {
+        "$comment": "通过 OCR 读取界面实时体力值并同步到 StateManager，修正离线预测误差。\n模板 OCR ROI 需指向游戏界面右上角体力显示区域（数字/数字 格式）。",
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [
+                    "\\d+/\\d+",
+                    "\\d+"
+                ],
+                "roi": [
+                    500,
+                    0,
+                    220,
+                    80
+                ]
+            }
+        },
+        "action": {
+            "type": "Custom",
+            "param": {
+                "custom_action": "StaminaSyncAction"
+            }
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Radar_ScanTasks"
+        ],
+        "timeout": 3000,
+        "on_error": [
+            "Radar_ScanTasks"
+        ]
+    },
+    "Radar_TryFreeRefresh": {
+        "$comment": "无可执行任务时，尝试消耗免费刷新次数。\n若 StateManager.radar.refreshes_left > 0，点击「刷新」按钮；否则跳至关闭。\n模板需填入雷达列表页「刷新」/「Refresh」按钮截图。",
+        "recognition": {
+            "type": "OCR",
+            "param": {
+                "expected": [
+                    "Refresh",
+                    "刷新"
+                ],
+                "roi": [
+                    0,
+                    1000,
+                    720,
+                    200
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 800,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Radar_ScanTasks"
+        ],
+        "timeout": 3000,
+        "on_error": [
+            "Radar_CloseRadar"
+        ]
+    },
+    "Radar_UsePotion": {
+        "$comment": "药水使用路径（严格受控）。\n仅当 top_lord_active=True 且 allow_potion=True 时，由 RadarDispatch 跳转至此。\n模板需填入背包药水「使用」按钮截图。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    0,
+                    720,
+                    1280
+                ],
+                "threshold": 0.75
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 500,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 1000,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "Radar_SyncStamina"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "Radar_CloseRadar"
+        ]
+    },
+    "Radar_CloseRadar": {
+        "$comment": "关闭雷达界面，返回主城。点击右上角或「返回」按钮。\n模板需填入雷达界面关闭/返回按钮截图。",
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "placeholder.png"
+                ],
+                "roi": [
+                    0,
+                    0,
+                    150,
+                    150
+                ],
+                "threshold": 0.7
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "pre_wait_freezes": {
+            "time": 300,
+            "threshold": 0.01
+        },
+        "post_wait_freezes": {
+            "time": 800,
+            "threshold": 0.01
+        },
+        "next": [
+            "[JumpBack]GlobalGuard",
+            "ReturnToHome"
+        ],
+        "timeout": 5000,
+        "on_error": [
+            "ReturnToHome"
+        ]
+    }
+}
