@@ -1,0 +1,152 @@
+{
+    "$__mpe_config_岛屿大作战": {
+        "$__mpe_code": {
+            "prefix": "",
+            "savedViewport": {
+                "x": 244,
+                "y": 210,
+                "zoom": 1.04
+            },
+            "filename": "岛屿大作战",
+            "version": "v1.4.1"
+        }
+    },
+    "进入岛屿大作战": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "iland_entry_icon.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "点击重置按钮"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 332,
+                "y": 292
+            }
+        }
+    },
+    "返回主页": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "iland_exit.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "$__mpe_code": {
+            "position": {
+                "x": 1077,
+                "y": 366
+            }
+        }
+    },
+    "点击扫荡图标": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "Sweep.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "点击扫荡按钮"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 289,
+                "y": 585
+            }
+        }
+    },
+    "点击重置按钮": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "iland_reset.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "点击扫荡图标"
+        ],
+        "on_error": [
+            "返回主页"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 652,
+                "y": 94
+            }
+        }
+    },
+    "点击扫荡按钮": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "Sweep_button.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "点击确定按钮"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 12,
+                "y": 12
+            }
+        }
+    },
+    "点击确定按钮": {
+        "recognition": {
+            "type": "TemplateMatch",
+            "param": {
+                "template": [
+                    "sweep_ok_button.png"
+                ]
+            }
+        },
+        "action": {
+            "type": "Click",
+            "param": {}
+        },
+        "next": [
+            "点击重置按钮"
+        ],
+        "$__mpe_code": {
+            "position": {
+                "x": 332,
+                "y": 70
+            }
+        }
+    }
+}
